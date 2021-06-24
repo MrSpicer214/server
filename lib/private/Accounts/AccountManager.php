@@ -369,18 +369,20 @@ class AccountManager implements IAccountManager {
 	 * @return array
 	 */
 	protected function addMissingDefaultValues(array $userData) {
-		foreach ($userData as $key => $value) {
-			if (!isset($userData[$key]['verified']) && !$this->isCollection($key)) {
-				$userData[$key]['verified'] = self::NOT_VERIFIED;
-			}
-			if ($this->isCollection($key)) {
-				foreach ($value as &$singlePropertyData) {
-					$singlePropertyData['name'] = $key;
+		foreach ($userData as $propertyNameOrIndex => $propertyData) {
+			$propertyName = isset($userData[$propertyNameOrIndex]['name']) ? $userData[$propertyNameOrIndex]['name'] : $propertyNameOrIndex;
+			if (!isset($userData[$propertyNameOrIndex]['verified'])) {
+				if (!$this->isCollection($propertyName)) {
+					$userData[$propertyNameOrIndex]['verified'] = self::NOT_VERIFIED;
 				}
-			} else {
-				$userData[$key]['name'] = $key;
+			}
+			if ($this->isCollection($propertyName)) {
+				foreach ($propertyData as $singelPropertyIndex => &$singlePropertyData) {
+					$singlePropertyData['name'] = $singelPropertyIndex;
+				}
 			}
 		}
+
 		if (!isset($userData[IAccountManager::COLLECTION_EMAIL])) {
 			$userData[IAccountManager::COLLECTION_EMAIL] = [];
 		}
@@ -424,7 +426,9 @@ class AccountManager implements IAccountManager {
 				if (!isset($jsonData[$property])) {
 					$jsonData[$property] = [];
 				}
-				$jsonData[$property][] = $data;
+				if (!empty($data)) {
+					$jsonData[$property][] = $data;
+				}
 			} else {
 				$jsonData[$property] = $data;
 			}
@@ -581,11 +585,12 @@ class AccountManager implements IAccountManager {
 
 	private function parseAccountData(IUser $user, $data): Account {
 		$account = new Account($user);
-		foreach ($data as $property => $accountData) {
-			if ($this->isCollection($property)) {
-				$account->setPropertyCollection($this->arrayDataToCollection($property, $accountData));
+		foreach ($data as $propertyNameOrIndex => $accountData) {
+			$propertyName = isset($data[$propertyNameOrIndex]['name']) ? $data[$propertyNameOrIndex]['name'] : $propertyNameOrIndex;
+			if ($this->isCollection($propertyName)) {
+				$account->setPropertyCollection($this->arrayDataToCollection($propertyName, $accountData));
 			} else {
-				$account->setProperty($property, $accountData['value'] ?? '', $accountData['scope'] ?? self::SCOPE_LOCAL, $accountData['verified'] ?? self::NOT_VERIFIED);
+				$account->setProperty($propertyName, $accountData['value'] ?? '', $accountData['scope'] ?? self::SCOPE_LOCAL, $accountData['verified'] ?? self::NOT_VERIFIED);
 			}
 		}
 		return $account;
