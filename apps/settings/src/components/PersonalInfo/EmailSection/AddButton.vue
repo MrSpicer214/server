@@ -17,58 +17,53 @@
   -
   - You should have received a copy of the GNU Affero General Public License
   - along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  -->
+-->
 
 <template>
-	<h3>
-		<label for="email">{{ t('settings', 'Email') }}</label>
-
-		<a href="#" class="federation-menu" :aria-label="t('settings', 'Change privacy level of email')">
-			<span class="icon-federation-menu icon-password">
-				<span class="icon-triangle-s" />
-			</span>
-		</a>
-
-		<Actions v-if="canEditEmails" :disabled="!isValidForm" class="actions">
-			<ActionButton icon="icon-add" @click.stop.prevent="addAdditionalEmail">
-				{{ t('settings', 'Add email address') }}
-			</ActionButton>
-		</Actions>
-	</h3>
+	<button
+		:disabled="disabled"
+		@click.stop.prevent="onClick">
+		<span
+			class="icon icon-add" />
+		Add
+	</button>
 </template>
 
 <script>
-import { Actions, ActionButton } from '@nextcloud/vue'
-
 export default {
-	name: 'Heading',
-	components: {
-		Actions,
-		ActionButton,
-	},
+	name: 'AddButton',
 
 	props: {
-		canEditEmails: {
+		disabled: {
 			type: Boolean,
-			default: true,
-		},
-		isValidForm: {
-			type: Boolean,
-			default: true,
+			default: false,
 		},
 	},
 
 	methods: {
-		addAdditionalEmail() {
-			this.$emit('addAdditionalEmail')
+		onClick(e) {
+			this.$emit('click', e)
 		},
 	},
 }
 </script>
 
 <style lang="scss" scoped>
-	.actions {
-		// TODO do this a less hacky way
-		margin: -12px 0 0 2px !important;
+	button {
+		height: 44px;
+		padding: 0 16px;
+		border: none;
+		background-color: transparent;
+		opacity: 0.4;
+
+		&:hover:enabled {
+			background-color: rgba(127, 127, 127, .25);
+			opacity: 0.8;
+		}
+
+		.icon {
+			margin-right: 8px;
+			opacity: 0.8;
+		}
 	}
 </style>

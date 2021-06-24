@@ -21,21 +21,16 @@
  */
 
 import Vue from 'vue'
-// eslint-disable-next-line node/no-unpublished-import
-import { Plugin as FragmentPlugin } from 'vue-fragment'
 
 import logger from './logger'
 
 import EmailSection from './components/PersonalInfo/EmailSection/EmailSection'
-// import store from './store/personal-info'
 
 // eslint-disable-next-line camelcase
 __webpack_nonce__ = btoa(OC.requestToken)
 
 Vue.prototype.t = t
 Vue.prototype.logger = logger
-
-Vue.use(FragmentPlugin)
 
 const View = Vue.extend(EmailSection)
 export default new View({

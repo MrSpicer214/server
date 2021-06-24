@@ -17,7 +17,7 @@
   -
   - You should have received a copy of the GNU Affero General Public License
   - along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  -->
+-->
 
 <template>
 	<div
@@ -35,14 +35,17 @@
 import { imagePath } from '@nextcloud/router'
 
 export default {
-	name: 'Verify',
+	name: 'Verification',
+
 	computed: {
 		email() {
 			return this.$store.state.primaryEmail
 		},
+
 		hideVerification() {
 			return this.email.value === '' || this.email.scope !== 'public'
 		},
+
 		verificationIcon() {
 			const VerificationEnum = Object.freeze({ NOT_VERIFIED: '0', VERIFICATION_IN_PROGRESS: '1', VERIFIED: '2' })
 

@@ -31,7 +31,9 @@ use OCP\Accounts\IAccountManager;
 trait TAccountsHelper {
 	protected function isCollection(string $propertyName): bool {
 		return in_array($propertyName,
-			IAccountManager::COLLECTION_PROPERTIES,
+			[
+				IAccountManager::COLLECTION_EMAIL,
+			],
 			true
 		);
 	}

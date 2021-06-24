@@ -17,15 +17,14 @@
   -
   - You should have received a copy of the GNU Affero General Public License
   - along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  -->
+-->
 
 <template>
 	<form id="emailform" ref="form" class="section">
-		<Heading :can-edit-emails="isDisplayNameChangeSupported"
+		<HeaderBar :can-edit-emails="isDisplayNameChangeSupported"
 			:is-valid-form="isValidForm"
+			:scope.sync="primaryEmail.scope"
 			@addAdditionalEmail="onAddAdditionalEmail" />
-
-		<!-- <Verify /> -->
 
 		<template v-if="isDisplayNameChangeSupported">
 			<Email :email.sync="primaryEmail.value"
@@ -35,7 +34,8 @@
 				:key="index"
 				:email.sync="additionalEmail.value"
 				:index="index"
-				@update:email="updateFormValidity" />
+				@update:email="updateFormValidity"
+				@deleteAdditionalEmail="onDeleteAdditionalEmail(index)" />
 		</template>
 
 		<span v-else>
@@ -45,11 +45,10 @@
 </template>
 
 <script>
-import Heading from './Heading'
-import Verify from './Verify'
-import Email from './Email'
-// import AdditionalEmail from './AdditionalEmail'
 import { loadState } from '@nextcloud/initial-state'
+
+import HeaderBar from './HeaderBar'
+import Email from './Email'
 
 const { additionalEmails, primaryEmail } = loadState('settings', 'emails')
 const accountParams = loadState('settings', 'accountParameters')
@@ -58,10 +57,8 @@ export default {
 	name: 'EmailSection',
 
 	components: {
-		Heading,
-		Verify,
+		HeaderBar,
 		Email,
-		// AdditionalEmail,
 	},
 
 	data() {
@@ -69,7 +66,6 @@ export default {
 			accountParams,
 			additionalEmails,
 			primaryEmail,
-
 			isValidForm: true,
 		}
 	},
@@ -81,17 +77,19 @@ export default {
 	},
 
 	mounted() {
-		this.updateFormValidity()
+		this.$nextTick(() => this.updateFormValidity())
 	},
 
 	methods: {
 		onAddAdditionalEmail() {
-			// If all existing inputs are properly
-			// populated, we allow adding a new one
 			if (this.$refs.form.checkValidity()) {
 				this.additionalEmails.push({ value: '' })
 				this.$nextTick(() => this.updateFormValidity())
 			}
+		},
+
+		onDeleteAdditionalEmail(index) {
+			this.$delete(this.additionalEmails, index)
 		},
 
 		updateFormValidity() {

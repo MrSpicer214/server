@@ -17,27 +17,42 @@
   -
   - You should have received a copy of the GNU Affero General Public License
   - along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  -->
+-->
 
 <template>
 	<div>
-		<input
-			ref="email"
-			type="email"
-			:name="inputName"
-			:placeholder="inputPlaceholder"
-			:value="email"
-			autocapitalize="none"
-			autocomplete="on"
-			autocorrect="off"
-			required="true"
-			@input="onEmailChange"
-			@keyup.enter.stop.prevent="onEmailChange">
+		<div class="email-container">
+			<input
+				ref="email"
+				type="email"
+				:name="inputName"
+				:placeholder="inputPlaceholder"
+				:value="email"
+				autocapitalize="none"
+				autocomplete="on"
+				autocorrect="off"
+				required="true"
+				@input="onEmailChange">
 
-		<transition name="fade">
-			<span v-if="showCheckmarkIcon" class="icon-checkmark" />
-			<span v-else-if="showErrorIcon" class="icon-error" />
-		</transition>
+			<Actions
+				class="actions-email"
+				:aria-label="t('settings', 'Email options')"
+				:disabled="actionsDisabled"
+				:force-menu="true">
+				<ActionButton
+					aria-label="deleteEmailLabel"
+					:close-after-click="true"
+					icon="icon-delete"
+					@click.stop.prevent="deleteEmail">
+					{{ deleteEmailLabel }}
+				</ActionButton>
+			</Actions>
+
+			<transition name="fade">
+				<span v-if="showCheckmarkIcon" class="icon-checkmark" />
+				<span v-else-if="showErrorIcon" class="icon-error" />
+			</transition>
+		</div>
 
 		<em v-if="primary">
 			{{ t('settings', 'Primary email for password reset and notifications') }}
@@ -46,12 +61,18 @@
 </template>
 
 <script>
-import { showError } from '@nextcloud/dialogs'
-import '@nextcloud/dialogs/styles/toast.scss'
-import { setPrimaryEmail, setAdditionalEmails } from '../../../service/PersonalInfoService'
+import { Actions, ActionButton } from '@nextcloud/vue'
+import { debounce } from 'debounce'
+
+import { savePrimaryEmail, saveAdditionalEmail, removeAdditionalEmail, updateAdditionalEmail } from '../../../service/PersonalInfoService'
 
 export default {
 	name: 'Email',
+
+	components: {
+		Actions,
+		ActionButton,
+	},
 
 	props: {
 		email: {
@@ -70,6 +91,7 @@ export default {
 
 	data() {
 		return {
+			initialEmail: this.email,
 			showCheckmarkIcon: false,
 			showErrorIcon: false,
 		}
@@ -82,21 +104,114 @@ export default {
 			}
 			return 'additionalEmail[]'
 		},
+
 		inputPlaceholder() {
 			if (this.primary) {
 				return t('settings', 'Your email address')
 			}
-			return t('settings', 'Additional email address {index}', { index: this.index })
+			return t('settings', 'Additional email address {index}', { index: this.index + 1 })
+		},
+
+		actionsDisabled() {
+			return this.email === ''
+		},
+
+		deleteEmailLabel() {
+			if (this.primary) {
+				return t('settings', 'Erase email')
+			}
+			return t('settings', 'Delete email')
 		},
 	},
 
 	methods: {
 		onEmailChange(e) {
 			this.$emit('update:email', e.target.value)
+			this.debounceEmailChange(e)
+		},
 
-			// Only save to server if valid
-			if (this.$refs.email?.checkValidity()) {
-				//
+		debounceEmailChange: debounce(function(e) {
+			this.$nextTick(async() => {
+				if (this.$refs.email?.checkValidity() || e.target.value === '') {
+					if (this.primary) {
+						await this.updatePrimaryEmail()
+					} else {
+						if (this.email === '') {
+							await this.deleteAdditonalEmail()
+						} else if (this.initialEmail === '') {
+							await this.addAdditionalEmail()
+						} else {
+							await this.updateAdditionalEmail()
+						}
+					}
+				}
+			})
+		}, 300),
+
+		async deleteEmail() {
+			if (this.primary) {
+				this.$emit('update:email', '')
+				this.$nextTick(async() => await this.updatePrimaryEmail())
+			} else {
+				await this.deleteAdditonalEmail()
+			}
+		},
+
+		async updatePrimaryEmail() {
+			try {
+				const responseData = await savePrimaryEmail(this.email)
+				this.showStatusIcon(responseData.ocs?.meta?.status)
+			} catch (e) {
+				if (this.email === '') {
+					this.logger.error('Unable to delete primary email address', e)
+				} else {
+					this.logger.error('Unable to update primary email address', e)
+				}
+			}
+		},
+
+		async addAdditionalEmail() {
+			try {
+				const responseData = await saveAdditionalEmail(this.email)
+				this.showStatusIcon(responseData.ocs?.meta?.status)
+			} catch (e) {
+				this.logger.error('Unable to add additional email address', e)
+			}
+		},
+
+		async updateAdditionalEmail() {
+			try {
+				const responseData = await updateAdditionalEmail(this.initialEmail, this.email)
+				this.showStatusIcon(responseData.ocs?.meta?.status)
+			} catch (e) {
+				this.logger.error('Unable to update additional email address', e)
+			}
+		},
+
+		async deleteAdditonalEmail() {
+			try {
+				const responseData = await removeAdditionalEmail(this.initialEmail)
+				this.handleDelete(responseData.ocs?.meta?.status)
+			} catch (e) {
+				this.logger.error('Unable to delete additional email address', e)
+			}
+		},
+
+		handleDelete(status) {
+			if (status === 'ok') {
+				this.$emit('deleteAdditionalEmail')
+			} else {
+				this.showStatusIcon('error')
+			}
+		},
+
+		showStatusIcon(status) {
+			if (status === 'ok') {
+				this.showCheckmarkIcon = true
+				setTimeout(() => { this.showCheckmarkIcon = false }, 2000)
+			} else {
+				this.showErrorIcon = true
+				setTimeout(() => { this.showErrorIcon = false }, 2000)
 			}
 		},
 	},
@@ -104,12 +219,47 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+	.email-container {
+		display: grid;
+		align-items: center;
+
+		input[type=email] {
+			grid-area: 1 / 1;
+		}
+
+		.actions-email {
+			grid-area: 1 / 1;
+			justify-self: flex-end;
+			height: 30px;
+
+			&::v-deep button {
+				margin-right: 5px;
+				height: 30px !important;
+				min-height: 30px !important;
+				width: 30px !important;
+				min-width: 30px !important;
+			}
+		}
+
+		.icon-checkmark,
+		.icon-error {
+			grid-area: 1 / 1;
+			justify-self: flex-end;
+			margin-right: 39px;
+			top: 0;
+			right: 0;
+			float: none;
+		}
+	}
+
 	.fade-enter-active {
 		transition: opacity 200ms ease-out;
 	}
+
 	.fade-leave-active {
 		transition: opacity 300ms ease-out;
 	}
+
 	.fade-enter,
 	.fade-leave-to {
 		opacity: 0;

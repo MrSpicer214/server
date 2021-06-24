@@ -144,28 +144,7 @@ class PersonalInfo implements ISettings {
 			'groups' => $this->getGroups($user),
 		] + $messageParameters + $languageParameters + $localeParameters;
 
-		$primaryEmail = [
-			'value' => $account->getProperty(IAccountManager::PROPERTY_EMAIL)->getValue(),
-			'scope' => $account->getProperty(IAccountManager::PROPERTY_EMAIL)->getScope(),
-			'verified' => $account->getProperty(IAccountManager::PROPERTY_EMAIL)->getVerified(),
-			'message' => $messageParameters[IAccountManager::PROPERTY_EMAIL . 'Message'],
-		];
-
-		$additionalEmails = array_map(
-			function(IAccountProperty $property) {
-				return [
-					'value' => $property->getValue(),
-					'scope' => $property->getScope(),
-					'verified' => $property->getVerified(),
-				];
-			},
-			$account->getPropertyCollection(IAccountManager::COLLECTION_EMAIL)->getProperties()
-		);
-
-		$emails = [
-			'primaryEmail' => $primaryEmail,
-			'additionalEmails' => $additionalEmails,
-		];
+		$emails = $this->getEmails($account);
 
 		$accountParameters = [
 			'displayNameChangeSupported' => $user->canChangeDisplayName(),
@@ -213,6 +192,42 @@ class PersonalInfo implements ISettings {
 		sort($groups);
 
 		return $groups;
+	}
+
+	/**
+	 * returns the primary email and additional emails in an
+	 * associative array
+	 *
+	 * @param IAccount $account
+	 * @return array
+	 */
+	private function getEmails(IAccount $account): array {
+		$messageParameters = $this->getMessageParameters($account);
+
+		$primaryEmail = [
+			'value' => $account->getProperty(IAccountManager::PROPERTY_EMAIL)->getValue(),
+			'scope' => $account->getProperty(IAccountManager::PROPERTY_EMAIL)->getScope(),
+			'verified' => $account->getProperty(IAccountManager::PROPERTY_EMAIL)->getVerified(),
+			'message' => $messageParameters[IAccountManager::PROPERTY_EMAIL . 'Message'],
+		];
+
+		$additionalEmails = array_map(
+			function(IAccountProperty $property) {
+				return [
+					'value' => $property->getValue(),
+					'scope' => $property->getScope(),
+					'verified' => $property->getVerified(),
+				];
+			},
+			$account->getPropertyCollection(IAccountManager::COLLECTION_EMAIL)->getProperties()
+		);
+
+		$emails = [
+			'primaryEmail' => $primaryEmail,
+			'additionalEmails' => $additionalEmails,
+		];
+
+		return $emails;
 	}
 
 	/**

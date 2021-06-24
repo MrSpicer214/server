@@ -825,15 +825,10 @@ class UsersController extends AUserData {
 				$this->config->setUserValue($targetUser->getUID(), 'core', 'locale', $value);
 				break;
 			case IAccountManager::PROPERTY_EMAIL:
-				$userAccount = $this->accountManager->getAccount($targetUser);
-				$userProperty = $userAccount->getProperty($key);
-				if ($userProperty->getValue() !== $value) {
-					try {
-						$userProperty->setValue($value);
-						$this->accountManager->updateAccount($userAccount);
-					} catch (\InvalidArgumentException $e) {
-						throw new OCSException('Invalid ' . $e->getMessage(), 102);
-					}
+				if (filter_var($value, FILTER_VALIDATE_EMAIL) || $value === '') {
+					$targetUser->setEMailAddress($value);
+				} else {
+					throw new OCSException('', 102);
 				}
 				break;
 			case IAccountManager::COLLECTION_EMAIL:

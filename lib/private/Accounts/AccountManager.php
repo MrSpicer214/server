@@ -385,12 +385,6 @@ class AccountManager implements IAccountManager {
 			$userData[IAccountManager::COLLECTION_EMAIL] = [];
 		}
 
-		foreach ($this::COLLECTION_PROPERTIES as $property) {
-			if (!isset($userData[$property])) {
-				$userData[$property] = new AccountPropertyCollection($property);
-			}
-		}
-
 		return $userData;
 	}
 
@@ -546,11 +540,6 @@ class AccountManager implements IAccountManager {
 					'value' => $user->getEMailAddress(),
 					'scope' => self::SCOPE_FEDERATED,
 					'verified' => self::NOT_VERIFIED,
-				],
-			self::COLLECTION_EMAIL =>
-				[
-					// TODO implement the correct way
-					'properties' => [],
 				],
 			self::PROPERTY_AVATAR =>
 				[
