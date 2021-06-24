@@ -35,6 +35,7 @@
 				@input="onEmailChange">
 
 			<Actions
+				v-show="email.trim() !== ''"
 				class="actions-email"
 				:aria-label="t('settings', 'Email options')"
 				:disabled="actionsDisabled"
@@ -61,8 +62,9 @@
 </template>
 
 <script>
-import { Actions, ActionButton } from '@nextcloud/vue'
-import { debounce } from 'debounce'
+import Actions from '@nextcloud/vue/dist/Components/Actions'
+import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
+import debounce from 'debounce'
 
 import { savePrimaryEmail, saveAdditionalEmail, removeAdditionalEmail, updateAdditionalEmail } from '../../../service/PersonalInfoService'
 
@@ -127,25 +129,23 @@ export default {
 	methods: {
 		onEmailChange(e) {
 			this.$emit('update:email', e.target.value)
-			this.debounceEmailChange(e)
+			this.debounceEmailChange(e.target.value)
 		},
 
-		debounceEmailChange: debounce(function(e) {
-			this.$nextTick(async() => {
-				if (this.$refs.email?.checkValidity() || e.target.value === '') {
-					if (this.primary) {
-						await this.updatePrimaryEmail()
+		debounceEmailChange: debounce(async function(email) {
+			if (this.$refs.email?.checkValidity() && email.trim() !== '') {
+				if (this.primary) {
+					await this.updatePrimaryEmail()
+				} else {
+					if (this.email === '') {
+						await this.deleteAdditionalEmail()
+					} else if (this.initialEmail === '') {
+						await this.addAdditionalEmail()
 					} else {
-						if (this.email === '') {
-							await this.deleteAdditonalEmail()
-						} else if (this.initialEmail === '') {
-							await this.addAdditionalEmail()
-						} else {
-							await this.updateAdditionalEmail()
-						}
+						await this.updateAdditionalEmail()
 					}
 				}
-			})
+			}
 		}, 300),
 
 		async deleteEmail() {
@@ -188,7 +188,7 @@ export default {
 			}
 		},
 
-		async deleteAdditonalEmail() {
+		async deleteAdditionalEmail() {
 			try {
 				const responseData = await removeAdditionalEmail(this.initialEmail)
 				this.handleDelete(responseData.ocs?.meta?.status)

@@ -20,8 +20,12 @@
 -->
 
 <template>
-	<form id="emailform" ref="form" class="section">
-		<HeaderBar :can-edit-emails="isDisplayNameChangeSupported"
+	<form id="emailform"
+		ref="form"
+		class="section"
+		@submit.prevent.stop="() => {}">
+		<HeaderBar
+			:can-edit-emails="isDisplayNameChangeSupported"
 			:is-valid-form="isValidForm"
 			:scope.sync="primaryEmail.scope"
 			@addAdditionalEmail="onAddAdditionalEmail" />
@@ -50,8 +54,8 @@ import { loadState } from '@nextcloud/initial-state'
 import HeaderBar from './HeaderBar'
 import Email from './Email'
 
-const { additionalEmails, primaryEmail } = loadState('settings', 'emails')
-const accountParams = loadState('settings', 'accountParameters')
+const { additionalEmails, primaryEmail } = loadState('settings', 'emails', {})
+const accountParams = loadState('settings', 'accountParameters', {})
 
 export default {
 	name: 'EmailSection',
